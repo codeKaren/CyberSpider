@@ -79,11 +79,16 @@ MultiMapTuple DiskMultiMap::Iterator::operator*()
 DiskMultiMap::DiskMultiMap()
 {
     // must initialize the object???
+    
+    // WHAT DO HERE??
 }
 
 DiskMultiMap::~DiskMultiMap()
 {
     // must close the diskfile associated with the hashtable
+    
+    // WAT DIS?? RIGHT??? IDK
+    close();
 }
 
 bool DiskMultiMap::createNew(const std::string& filename, unsigned int numBuckets)
@@ -147,6 +152,8 @@ bool DiskMultiMap::insert(const std::string& key, const std::string& value, cons
     // hash the key to find what bucket to put it in
     unsigned int hashValue = m_stringHasher(key);
     unsigned int bucket = hashValue % m_header.m_numBuckets;
+    // testing
+    cout << bucket << endl;
     
     // initialize a new node
     Node newNode;
@@ -184,10 +191,26 @@ bool DiskMultiMap::insert(const std::string& key, const std::string& value, cons
     return true;
 }
 
-//DiskMultiMap::Iterator DiskMultiMap::search(const std::string& key)
-//{
-//    
-//}
+DiskMultiMap::Iterator DiskMultiMap::search(const std::string& key)
+{
+    unsigned int hashValue = m_stringHasher(key);
+    unsigned int bucket = hashValue % m_header.m_numBuckets;
+    BinaryFile::Offset posOfBucket = sizeof(Header) + sizeof(Bucket)*bucket;   // find the bucket
+    
+    Bucket dataGetter;  // get data from the bucket
+    m_file.read(dataGetter, posOfBucket);
+    
+    if (dataGetter.m_numNodes == 0)  // no nodes
+    {
+        Iterator invalidIt;   // the default constructor creates an invalid iterator
+        return invalidIt;
+    }
+    else
+    {
+        Iterator validIt(true, dataGetter.m_node, &m_file);
+        return validIt;
+    }
+}
 
 int DiskMultiMap::erase(const std::string& key, const std::string& value, const std::string& context)
 {
@@ -218,13 +241,23 @@ void DiskMultiMap::printAll()
 //    while( iterator < m_file.fileLength())
 //    {
 //        m_file.read(tempNode, iterator);
-//        cout << "Key: " << tempNode.m_key << " " << "Value: " << tempNode.m_value << " " << "Context: " << tempNode.m_context << endl;
+//        cout << "Key: " << tempNode.m_key << " " << "Value: " << tempNode.m_value << " " << "Context: " << tempNode.m_context << " " << "Next pointer: " << tempNode.m_next << endl;
 //        iterator += sizeof(Node);
 //    }
     
-    // implementation with iterator
+    // implementation with iterator (must go find node manually)
+//    MultiMapTuple tuple;
+//    Iterator it(true, m_header.m_startOfNodes + sizeof(Node)*4, &m_file);  // it must point to the start of the list
+//    while (it.isValid())
+//    {
+//        tuple = *it;
+//        cout << "Key: " << tuple.key << " " << "Value: " << tuple.value << " " << "Context: " << tuple.context << endl;
+//        ++it;
+//    }
+    
+    //implementation with iterator (search for the node)
     MultiMapTuple tuple;
-    Iterator it(true, m_header.m_startOfNodes, &m_file);
+    Iterator it = search("apple");  // it must point to the start of the list
     while (it.isValid())
     {
         tuple = *it;

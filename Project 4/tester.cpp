@@ -12,11 +12,12 @@
 int main()
 {
     DiskMultiMap myMap;
-    // myMap.printAll();
-    myMap.createNew("Karen.dat", 5);
+    myMap.createNew("Karen.dat", 100);
     myMap.insert("apple", "banana", "carrot");
+    myMap.printAll();
     myMap.insert("durian", "eggplant", "fruit");
     myMap.insert("grape", "hawthorne", "igloo");
     myMap.insert("apple", "bread", "chocolate");
+    myMap.insert("apple", "beef", "chicken");
     myMap.printAll();
 }
