@@ -22,7 +22,7 @@ public:
     public:
         Iterator();
         // You may add additional constructors
-        Iterator(bool valid, BinaryFile::Offset current);  // can specify if an iterator is valid or not and where it points 
+        Iterator(bool valid, BinaryFile::Offset current, BinaryFile* bfile);  // can specify if an iterator is valid or not and where it points
         bool isValid() const;
         Iterator& operator++();
         MultiMapTuple operator*();
@@ -31,6 +31,7 @@ public:
         // Your private member declarations will go here
         bool m_valid;
         BinaryFile::Offset m_current;
+        BinaryFile* m_binaryFile;
     };
     
     DiskMultiMap();
@@ -58,6 +59,7 @@ private:
     
     struct Node
     {
+        char m_key[121];
         char m_value[121];
         char m_context[121];
         BinaryFile::Offset m_next;  // points to the next node in the list
@@ -71,6 +73,7 @@ private:
     
     BinaryFile m_file;
     Header m_header;
+    std::hash<std::string> m_stringHasher;
 };
 
 #endif // DISKMULTIMAP_H_

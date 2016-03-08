@@ -18,10 +18,11 @@ DiskMultiMap::Iterator::Iterator()
     m_valid = false;
 }
 
-DiskMultiMap::Iterator::Iterator(bool valid, BinaryFile::Offset current)
+DiskMultiMap::Iterator::Iterator(bool valid, BinaryFile::Offset current, BinaryFile* bfile)
 {
     m_valid = valid;
     m_current = current;
+    m_binaryFile = bfile;
 }
 
 bool DiskMultiMap::Iterator::isValid() const
@@ -37,6 +38,13 @@ DiskMultiMap::Iterator& DiskMultiMap::Iterator::operator++()
 //        to the next association in the DiskMultiMap with the same key as the association the
 //        Iterator currently points to, if there is one; if there is no next association with the same
 //        key, then the ++ operator MUST change the Iterator’s state to invalid.
+
+        Node tempNode;
+        m_binaryFile->read(tempNode, m_current);  // get the data inside the node
+        if (tempNode.m_next == -1)   // no next association with the same key
+            m_valid = false;
+        else
+            m_current = tempNode.m_next;
     }
     
     return *this;
@@ -56,8 +64,13 @@ MultiMapTuple DiskMultiMap::Iterator::operator*()
 //        the key, value and context strings of the MultiMapTuple
 //        returned have values equal to the key, value, and context components of the association
 //        the Iterator points to.
+        // how is the iterator supposed to figure out the key?? eg. how to unhash the bucket?
+        Node tempNode;
+        m_binaryFile->read(tempNode, m_current);  // get data inside the current node
+        tuple.key = tempNode.m_key;
+        tuple.value = tempNode.m_value;
+        tuple.context = tempNode.m_context;
     }
-    
     return tuple;
 }
 
@@ -127,20 +140,17 @@ void DiskMultiMap::close()
 
 bool DiskMultiMap::insert(const std::string& key, const std::string& value, const std::string& context)
 {
-    cout << "preinsertion length: " << m_file.fileLength() << endl;
-    
-    
     // invalid size for input
     if (key.size() > 120 || value.size() > 120 || context.size() > 120)
         return false;
     
     // hash the key to find what bucket to put it in
-    std::hash<std::string> str_hash;
-    unsigned int hashValue = str_hash(key);
+    unsigned int hashValue = m_stringHasher(key);
     unsigned int bucket = hashValue % m_header.m_numBuckets;
     
     // initialize a new node
     Node newNode;
+    strcpy(newNode.m_key, key.c_str());
     strcpy(newNode.m_value, value.c_str());
     strcpy(newNode.m_context, context.c_str());
     
@@ -170,11 +180,7 @@ bool DiskMultiMap::insert(const std::string& key, const std::string& value, cons
         m_header.m_end = tempHeader.m_end;  // reinitialize the header to contain the correct pointer to the end
         m_file.write(tempHeader, 0);
     }
-    
-    // TESTING
-    cout << "inserted and here is the new length: " << m_file.fileLength() << endl;
-    
-    
+        
     return true;
 }
 
@@ -185,6 +191,18 @@ bool DiskMultiMap::insert(const std::string& key, const std::string& value, cons
 
 int DiskMultiMap::erase(const std::string& key, const std::string& value, const std::string& context)
 {
+    unsigned int hashValue = m_stringHasher(key);
+    unsigned int bucket = hashValue % m_header.m_numBuckets;  // find which bucket to search in
+    
+    Bucket dataGetter;
+    BinaryFile::Offset posOfBucket = sizeof(Header) + sizeof(Bucket)*bucket;
+    m_file.read(dataGetter, posOfBucket);   // get the data inside of the bucket corresponding to the key
+    
+    for (int i = 0; i < dataGetter.m_numNodes; i++)  // look through all of the nodes in the list in that bucket
+    {
+        
+    }
+
     
     // garbage
     return 0;
@@ -194,12 +212,24 @@ int DiskMultiMap::erase(const std::string& key, const std::string& value, const 
 
 void DiskMultiMap::printAll()
 {
-    Node tempNode;
-    BinaryFile::Offset iterator = m_header.m_startOfNodes;
-    while( iterator < m_file.fileLength())
+    // implementation of print all without iterator
+//    Node tempNode;
+//    BinaryFile::Offset iterator = m_header.m_startOfNodes;
+//    while( iterator < m_file.fileLength())
+//    {
+//        m_file.read(tempNode, iterator);
+//        cout << "Key: " << tempNode.m_key << " " << "Value: " << tempNode.m_value << " " << "Context: " << tempNode.m_context << endl;
+//        iterator += sizeof(Node);
+//    }
+    
+    // implementation with iterator
+    MultiMapTuple tuple;
+    Iterator it(true, m_header.m_startOfNodes, &m_file);
+    while (it.isValid())
     {
-        m_file.read(tempNode, iterator);
-        cout << "Value: " << tempNode.m_value << " " << "Context: " << tempNode.m_context << endl;
-        iterator += sizeof(Node);
+        tuple = *it;
+        cout << "Key: " << tuple.key << " " << "Value: " << tuple.value << " " << "Context: " << tuple.context << endl;
+        ++it;
     }
+    
 }
