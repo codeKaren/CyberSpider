@@ -170,7 +170,18 @@ bool DiskMultiMap::insert(const std::string& key, const std::string& value, cons
     // TO DO: check to see if there is a spot already allocated in memory where you can put the node
     if (m_header.m_listOfFreeSpots != -1)
     {
-        
+        // get the data from the currently empty spot for the position of the next empty spot
+        Node tempNode;
+        m_file.read(tempNode, m_header.m_listOfFreeSpots);
+        BinaryFile::Offset nextEmptySpot = tempNode.m_next;  // get the position of the next empty spot
+        // put the new node in the free slot
+        m_file.write(newNode, m_header.m_listOfFreeSpots);
+        dataGetter.m_node = m_header.m_listOfFreeSpots;   // make the bucket list's first element be the new node
+        dataGetter.m_numNodes++;   // incremement # nodes in list
+        m_file.write(dataGetter, posOfBucket);
+        // change the header since the first element of the list of empty spots is somewhere new
+        m_header.m_listOfFreeSpots = nextEmptySpot;  // initialize the head pointer of free spots
+        m_file.write(m_header, 0);
     }
     
     // no previously allocated spots that you can put the node
@@ -324,15 +335,16 @@ void DiskMultiMap::printAll()
     
     //implementation with iterator (search for the node)
     MultiMapTuple tuple;
-    Iterator it = search("apple");  // it must point to the start of the list
+    Iterator it = search("a");  // it must point to the start of the list
     while (it.isValid())
     {
         tuple = *it;
         cout << "Key: " << tuple.key << " " << "Value: " << tuple.value << " " << "Context: " << tuple.context << endl;
         ++it;
-        
-        cout << "First empty spot you can use: " << m_header.m_listOfFreeSpots << endl;
     }
+    cout << "First empty spot you can use: " << m_header.m_listOfFreeSpots << endl;
     
+    cout << "The current file size is: " << m_file.fileLength() << endl;
+
 }
 
