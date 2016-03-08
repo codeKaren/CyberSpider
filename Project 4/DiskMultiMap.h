@@ -54,7 +54,7 @@ private:
         int m_numBuckets;    // number of buckets in the hash table
         BinaryFile::Offset m_end;  // points to the end of the file (so you can put more data there)
         BinaryFile::Offset m_startOfNodes;  // points to the part of the file past the buckets where the nodes start
-        BinaryFile::Offset m_listOfFreeSpots;   // points to the empty spot that's already been allocated (reuse memory)
+        BinaryFile::Offset m_listOfFreeSpots;   // points to the first empty spot that's already been allocated (reuse memory)
     };
     
     struct Node
@@ -62,6 +62,7 @@ private:
         char m_key[121];
         char m_value[121];
         char m_context[121];
+        bool isDeleted;
         BinaryFile::Offset m_next;  // points to the next node in the list
     };
     

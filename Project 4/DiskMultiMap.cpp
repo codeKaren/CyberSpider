@@ -153,13 +153,13 @@ bool DiskMultiMap::insert(const std::string& key, const std::string& value, cons
     unsigned int hashValue = m_stringHasher(key);
     unsigned int bucket = hashValue % m_header.m_numBuckets;
     // testing
-    cout << bucket << endl;
     
     // initialize a new node
     Node newNode;
     strcpy(newNode.m_key, key.c_str());
     strcpy(newNode.m_value, value.c_str());
     strcpy(newNode.m_context, context.c_str());
+    newNode.isDeleted = false;
     
     // find the data inside the correct bucket
     Bucket dataGetter;
@@ -221,14 +221,81 @@ int DiskMultiMap::erase(const std::string& key, const std::string& value, const 
     BinaryFile::Offset posOfBucket = sizeof(Header) + sizeof(Bucket)*bucket;
     m_file.read(dataGetter, posOfBucket);   // get the data inside of the bucket corresponding to the key
     
-    for (int i = 0; i < dataGetter.m_numNodes; i++)  // look through all of the nodes in the list in that bucket
+    bool haveSetBucketHead = false;  // check to see if the bucket's head pointer has been reset
+    int numErased = 0;
+    BinaryFile::Offset currentNode = dataGetter.m_node;   // set iterator to the first element in the list
+    BinaryFile::Offset previousNode = -1;   // no previous node in the beginning
+    int initialNumNodes = dataGetter.m_numNodes;
+    
+    string nodeKey;                // variables to store data in
+    string nodeValue;
+    string nodeContext;
+    BinaryFile::Offset nodeNext;
+    Bucket finalBucket;            // initialize this to hold the values of the bucket after deleting everything
+    Node tempNode;    // contains the current node
+    Node prevNode;   // contains the previous node (or the current node if at the very beginning)
+    
+    for (int i = 0; i < initialNumNodes; i++)  // look through all of the nodes in the list in that bucket
     {
+        // delete the nodes starting from the first one and then keep deleting until you hit the first one you don't delete
+        // once you hit that one, set the bucket's m_node variable to that
+        // check outside the loop if the bucket's numNodes == 0, and if it does, just set the bucket's m_node to -1
+        m_file.read(tempNode, currentNode);  // get all of the data from the current node we're examining
+        nodeKey = tempNode.m_key;
+        nodeValue = tempNode.m_value;
+        nodeContext = tempNode.m_context;
+        nodeNext = tempNode.m_next;
+        if (previousNode != -1)
+            m_file.read(prevNode, previousNode);   // get the data from the previous node if valid previous node
         
+        if (nodeKey == key && nodeValue == value && nodeContext == context)  // found a match
+        {
+            tempNode.isDeleted = true;
+            Header tempHeader;
+            m_file.read(tempHeader, 0);
+            tempNode.m_next = tempHeader.m_listOfFreeSpots;  // link the new empty spot to the old list of empty spots
+            tempHeader.m_listOfFreeSpots = currentNode;   // edit the header so it points to the new empty spot
+            m_header = tempHeader;   // change the actual header member variable too
+            m_file.write(tempNode, currentNode);
+            m_file.write(tempHeader, 0);
+            numErased++;
+        }
+        else
+        {
+            if (haveSetBucketHead == false)  // didn't find a node and we haven't initialized the bucket's m_node yet
+            {
+                finalBucket.m_node = currentNode;   // initialize the bucket's m_node variable, initialize m_numNodes later
+                haveSetBucketHead = true;
+            }
+            if (previousNode != -1)
+            {
+                prevNode.m_next = currentNode;   // link the previous node to the current node
+                m_file.write(prevNode, previousNode);
+            }
+            previousNode = currentNode;  // move the previous node
+        }
+        
+        currentNode = nodeNext;  // move the iterator over
     }
 
+    finalBucket.m_numNodes = initialNumNodes - numErased;
+    
+    // in case we deleted everything in the list and so, haven't set the bucket's m_node variable to a new value yet
+    if (finalBucket.m_numNodes == 0)
+        finalBucket.m_node = -1;       // means there's nothing in the bucket's list
+    // since we haven't deleted everything, there must be a last node in the list
+    else
+    {
+        Node lastNode;
+        m_file.read(lastNode, previousNode);
+        lastNode.m_next = -1;
+        m_file.write(lastNode, previousNode);
+    }
+    
+    m_file.write(finalBucket, posOfBucket);   // write the new values of the bucket onto disk
     
     // garbage
-    return 0;
+    return numErased;
 }
 
 // TESTING CODE BELOW
@@ -263,6 +330,9 @@ void DiskMultiMap::printAll()
         tuple = *it;
         cout << "Key: " << tuple.key << " " << "Value: " << tuple.value << " " << "Context: " << tuple.context << endl;
         ++it;
+        
+        cout << "First empty spot you can use: " << m_header.m_listOfFreeSpots << endl;
     }
     
 }
+
