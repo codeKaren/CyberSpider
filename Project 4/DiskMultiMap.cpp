@@ -96,6 +96,9 @@ bool DiskMultiMap::createNew(const std::string& filename, unsigned int numBucket
 //    If your DiskMultiMap object already has been used to open or create a disk-based hash
 //    table, and the createNew() method is called, your method MUST first close the currently open
 //    data file, and then proceed with creating the newly specified data file.
+    
+    // when does this return FALSE??? HELP
+    
     if (m_file.isOpen())
         m_file.close();
     

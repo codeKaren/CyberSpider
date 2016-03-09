@@ -15,26 +15,47 @@ IntelWeb::IntelWeb()
 
 IntelWeb::~IntelWeb()
 {
-    
+    close();
 }
 
 bool IntelWeb::createNew(const std::string& filePrefix, unsigned int maxDataItems)
 {
+//    The createNew() method MUST close any DiskMultiMaps this IntelWeb object might
+//    have created or opened before creating any new ones. If successful, createNew() MUST
+//    have overwritten any existing DiskMultiMap disk files with new, empty versions.
+
+    close();
     
-    // garbage
-    return false;
+    m_filePrefix = filePrefix;
+    
+    // since the load factor is ~0.75, get the number of buckets you should have
+    unsigned int numBuckets = maxDataItems * 4/3;
+    if (m_forwardMap.createNew(filePrefix+"forward", numBuckets) && m_reverseMap.createNew(filePrefix+"reverse", numBuckets))
+        return true;  // successfully created the diskfiles
+    else
+    {
+        close();
+        return false;
+    }
 }
 
 bool IntelWeb::openExisting(const std::string& filePrefix)
 {
+    close();
     
-    // garbage
-    return false;
+    if (m_forwardMap.openExisting(m_filePrefix+"forward") && m_reverseMap.openExisting(m_filePrefix+"reverse"))
+        return true;
+    else
+    {
+        close();
+        return false;
+    }
 }
 
 void IntelWeb::close()
 {
-    
+    m_forwardMap.close();
+    m_reverseMap.close();
 }
 
 bool IntelWeb::ingest(const std::string& telemetryFile)

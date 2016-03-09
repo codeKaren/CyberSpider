@@ -10,6 +10,7 @@
 #define INTELWEB_H_
 
 #include "InteractionTuple.h"
+#include "DiskMultiMap.h"
 #include <string>
 #include <vector>
 
@@ -31,6 +32,10 @@ public:
     
 private:
     // Your private member declarations will go here
+    DiskMultiMap m_forwardMap;
+    DiskMultiMap m_reverseMap;
+    // am i allowed to have this????
+    std::string m_filePrefix;
 };
 
 #endif // INTELWEB_H_
