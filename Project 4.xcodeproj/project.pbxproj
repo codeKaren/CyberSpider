@@ -7,6 +7,8 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		9C7F3A151C8FF958006F3500 /* p4gen.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 9C7F3A141C8FF958006F3500 /* p4gen.cpp */; };
+		9C7F3A2A1C9167C9006F3500 /* p4tester.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 9C7F3A291C9167C9006F3500 /* p4tester.cpp */; };
 		9CD9AE7A1C8B58770047DD82 /* tester.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 9CD9AE791C8B58770047DD82 /* tester.cpp */; };
 		9CD9AE821C8B58B00047DD82 /* DiskMultiMap.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 9CD9AE801C8B58B00047DD82 /* DiskMultiMap.cpp */; };
 		9CD9AE851C8B58E90047DD82 /* IntelWeb.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 9CD9AE831C8B58E90047DD82 /* IntelWeb.cpp */; };
@@ -25,6 +27,8 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		9C7F3A141C8FF958006F3500 /* p4gen.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = p4gen.cpp; sourceTree = "<group>"; };
+		9C7F3A291C9167C9006F3500 /* p4tester.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = p4tester.cpp; sourceTree = "<group>"; };
 		9CD9AE761C8B58770047DD82 /* Project 4 */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = "Project 4"; sourceTree = BUILT_PRODUCTS_DIR; };
 		9CD9AE791C8B58770047DD82 /* tester.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = tester.cpp; sourceTree = "<group>"; };
 		9CD9AE801C8B58B00047DD82 /* DiskMultiMap.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = DiskMultiMap.cpp; sourceTree = "<group>"; };
@@ -74,6 +78,8 @@
 				9CD9AE871C8B59B40047DD82 /* MultiMapTuple.h */,
 				9CD9AE881C8B59CD0047DD82 /* BinaryFile.h */,
 				9CD9AE791C8B58770047DD82 /* tester.cpp */,
+				9C7F3A291C9167C9006F3500 /* p4tester.cpp */,
+				9C7F3A141C8FF958006F3500 /* p4gen.cpp */,
 			);
 			path = "Project 4";
 			sourceTree = "<group>";
@@ -134,7 +140,9 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				9C7F3A151C8FF958006F3500 /* p4gen.cpp in Sources */,
 				9CD9AE7A1C8B58770047DD82 /* tester.cpp in Sources */,
+				9C7F3A2A1C9167C9006F3500 /* p4tester.cpp in Sources */,
 				9CD9AE851C8B58E90047DD82 /* IntelWeb.cpp in Sources */,
 				9CD9AE821C8B58B00047DD82 /* DiskMultiMap.cpp in Sources */,
 			);
@@ -255,6 +263,7 @@
 				9CD9AE7F1C8B58770047DD82 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
 	};

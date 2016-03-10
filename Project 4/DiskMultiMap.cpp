@@ -39,12 +39,22 @@ DiskMultiMap::Iterator& DiskMultiMap::Iterator::operator++()
 //        Iterator currently points to, if there is one; if there is no next association with the same
 //        key, then the ++ operator MUST change the Iterator’s state to invalid.
 
-        Node tempNode;
+        Node tempNode, nextNode;
         m_binaryFile->read(tempNode, m_current);  // get the data inside the node
-        if (tempNode.m_next == -1)   // no next association with the same key
-            m_valid = false;
-        else
-            m_current = tempNode.m_next;
+        string key = tempNode.m_key;
+        BinaryFile::Offset nextNodeOffset = tempNode.m_next;
+        while (nextNodeOffset != -1)
+        {
+            m_binaryFile->read(nextNode, nextNodeOffset);
+            // check for collisions
+            if (strcmp(nextNode.m_key,key.c_str()) == 0)   // found the next item with the same key
+            {
+                m_current = nextNodeOffset;
+                return *this;
+            }
+            nextNodeOffset = nextNode.m_next;  // move iterator over to next one
+        }
+        m_valid = false; // gone through all of the nodes and haven't found the correct item
     }
     
     return *this;
@@ -97,7 +107,6 @@ bool DiskMultiMap::createNew(const std::string& filename, unsigned int numBucket
 //    table, and the createNew() method is called, your method MUST first close the currently open
 //    data file, and then proceed with creating the newly specified data file.
     
-    // when does this return FALSE??? HELP
     
     if (m_file.isOpen())
         m_file.close();
@@ -135,7 +144,11 @@ bool DiskMultiMap::openExisting(const std::string& filename)
 //    currently-open data file, and then proceed with opening the newly specified data file
     
     if (m_file.openExisting(filename))
+    {
+        m_file.read(m_header, 0);
         return true;
+    }
+    
     else
     return false;
 }
@@ -221,8 +234,26 @@ DiskMultiMap::Iterator DiskMultiMap::search(const std::string& key)
     }
     else
     {
-        Iterator validIt(true, dataGetter.m_node, &m_file);
-        return validIt;
+        // check for collisions
+        int numNodes = dataGetter.m_numNodes;
+        BinaryFile::Offset currentNode = dataGetter.m_node;
+        Node tempNode;
+        while (numNodes > 0)
+        {
+            m_file.read(tempNode, currentNode);
+            if (strcmp(tempNode.m_key, key.c_str()) == 0)    // found the correct node
+            {
+                Iterator validIt(true, currentNode, &m_file);  // return an iterator to the correct node
+                return validIt;
+            }
+            else
+            {
+                numNodes--;
+                currentNode = tempNode.m_next;
+            }
+        }
+        Iterator it;   // couldn't find the ndoe, so just return an invalid node
+        return it;
     }
 }
 
@@ -316,7 +347,7 @@ int DiskMultiMap::erase(const std::string& key, const std::string& value, const 
 
 void DiskMultiMap::printAll()
 {
-    // implementation of print all without iterator
+//    // implementation of print all without iterator
 //    Node tempNode;
 //    BinaryFile::Offset iterator = m_header.m_startOfNodes;
 //    while( iterator < m_file.fileLength())
@@ -338,7 +369,7 @@ void DiskMultiMap::printAll()
     
     //implementation with iterator (search for the node)
     MultiMapTuple tuple;
-    Iterator it = search("a");  // it must point to the start of the list
+    Iterator it = search("apple");  // it must point to the start of the list
     while (it.isValid())
     {
         tuple = *it;

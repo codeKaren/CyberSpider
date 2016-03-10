@@ -13,7 +13,7 @@
 //int main()
 //{
 //    DiskMultiMap myMap;
-//    myMap.createNew("Karen.dat", 100);
+//    myMap.createNew("Karen.dat", 3);
 //    myMap.insert("apple", "banana", "carrot");
 //    cout << "first print" << endl;
 //    myMap.printAll();
@@ -35,7 +35,6 @@
 //}
 
 // Personal test of deletion mostly (seeing if actually using memory efficiently)
-
 //int main() {
 //    DiskMultiMap myMap;
 //    myMap.createNew("Karen.dat", 100);
@@ -72,6 +71,7 @@
 //    x.insert("hmm.exe", "pfft.exe", "m52902");
 //    x.insert("hmm.exe", "pfft.exe", "m10001");
 //    x.insert("blah.exe", "bletch.exe", "m0003");
+//    x.printAll();
 //    DiskMultiMap::Iterator it = x.search("hmm.exe");
 //    if (it.isValid())
 //    {
@@ -103,21 +103,21 @@
 //}
 
 // Spec test 3
-int main()
-{
-    DiskMultiMap x;
-    x.createNew("myhashtable.dat",100); // empty, with 100 buckets
-    x.insert("hmm.exe", "pfft.exe", "m52902");
-    x.insert("hmm.exe", "pfft.exe", "m52902");
-    x.insert("hmm.exe", "pfft.exe", "m10001");
-    x.insert("blah.exe", "bletch.exe", "m0003");
-    // line 1
-    if (x.erase("hmm.exe", "pfft.exe", "m52902") == 2)
-        cout << "Just erased 2 items from the table!\n";
-    // line 2
-    if (x.erase("hmm.exe", "pfft.exe", "m10001") > 0)
-        cout << "Just erased at least 1 item from the table!\n";
-    // line 3
-    if (x.erase("blah.exe", "bletch.exe", "m66666") == 0)
-        cout << "I didn't erase this item cause it wasn't there\n";
-}
+//int main()
+//{
+//    DiskMultiMap x;
+//    x.createNew("myhashtable.dat",100); // empty, with 100 buckets
+//    x.insert("hmm.exe", "pfft.exe", "m52902");
+//    x.insert("hmm.exe", "pfft.exe", "m52902");
+//    x.insert("hmm.exe", "pfft.exe", "m10001");
+//    x.insert("blah.exe", "bletch.exe", "m0003");
+//    // line 1
+//    if (x.erase("hmm.exe", "pfft.exe", "m52902") == 2)
+//        cout << "Just erased 2 items from the table!\n";
+//    // line 2
+//    if (x.erase("hmm.exe", "pfft.exe", "m10001") > 0)
+//        cout << "Just erased at least 1 item from the table!\n";
+//    // line 3
+//    if (x.erase("blah.exe", "bletch.exe", "m66666") == 0)
+//        cout << "I didn't erase this item cause it wasn't there\n";
+//}
