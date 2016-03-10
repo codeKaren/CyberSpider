@@ -52,7 +52,7 @@ DiskMultiMap::Iterator& DiskMultiMap::Iterator::operator++()
                 m_current = nextNodeOffset;
                 return *this;
             }
-            nextNodeOffset = nextNode.m_next;  // move iterator over to next one
+            nextNodeOffset = nextNode.m_next;  // move over to next one
         }
         m_valid = false; // gone through all of the nodes and haven't found the correct item
     }
@@ -87,17 +87,11 @@ MultiMapTuple DiskMultiMap::Iterator::operator*()
 // DISKMULTIMAP IMPLEMENTATION =====================================================================================
 
 DiskMultiMap::DiskMultiMap()
-{
-    // must initialize the object???
-    
-    // WHAT DO HERE??
-}
+{ }
 
 DiskMultiMap::~DiskMultiMap()
 {
     // must close the diskfile associated with the hashtable
-    
-    // WAT DIS?? RIGHT??? IDK
     close();
 }
 
@@ -111,8 +105,9 @@ bool DiskMultiMap::createNew(const std::string& filename, unsigned int numBucket
     if (m_file.isOpen())
         m_file.close();
     
-    m_file.createNew(filename);   // make a new disk file for the hashtable
-    
+    if (! m_file.createNew(filename))   // make a new disk file for the hashtable
+        return false;
+        
     // initialize the header
     m_header.m_numBuckets = numBuckets;
     m_header.m_end = sizeof(Header);
@@ -133,7 +128,6 @@ bool DiskMultiMap::createNew(const std::string& filename, unsigned int numBucket
     m_header.m_startOfNodes = m_header.m_end;
     m_file.write(m_header, 0);
     
-    // garbage
     return true;
 }
 
@@ -155,7 +149,6 @@ bool DiskMultiMap::openExisting(const std::string& filename)
 
 void DiskMultiMap::close()
 {
-    // is this correct at all??? WTF AM I DOING
     m_file.close();
 }
 
@@ -342,43 +335,3 @@ int DiskMultiMap::erase(const std::string& key, const std::string& value, const 
     // garbage
     return numErased;
 }
-
-// TESTING CODE BELOW
-
-void DiskMultiMap::printAll()
-{
-//    // implementation of print all without iterator
-//    Node tempNode;
-//    BinaryFile::Offset iterator = m_header.m_startOfNodes;
-//    while( iterator < m_file.fileLength())
-//    {
-//        m_file.read(tempNode, iterator);
-//        cout << "Key: " << tempNode.m_key << " " << "Value: " << tempNode.m_value << " " << "Context: " << tempNode.m_context << " " << "Next pointer: " << tempNode.m_next << endl;
-//        iterator += sizeof(Node);
-//    }
-    
-    // implementation with iterator (must go find node manually)
-//    MultiMapTuple tuple;
-//    Iterator it(true, m_header.m_startOfNodes + sizeof(Node)*4, &m_file);  // it must point to the start of the list
-//    while (it.isValid())
-//    {
-//        tuple = *it;
-//        cout << "Key: " << tuple.key << " " << "Value: " << tuple.value << " " << "Context: " << tuple.context << endl;
-//        ++it;
-//    }
-    
-    //implementation with iterator (search for the node)
-    MultiMapTuple tuple;
-    Iterator it = search("apple");  // it must point to the start of the list
-    while (it.isValid())
-    {
-        tuple = *it;
-        cout << "Key: " << tuple.key << " " << "Value: " << tuple.value << " " << "Context: " << tuple.context << endl;
-        ++it;
-    }
-    cout << "First empty spot you can use: " << m_header.m_listOfFreeSpots << endl;
-    
-    cout << "The current file size is: " << m_file.fileLength() << endl;
-
-}
-

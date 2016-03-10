@@ -43,9 +43,6 @@ public:
     Iterator search(const std::string& key);
     int erase(const std::string& key, const std::string& value, const std::string& context);
     
-    // TESTING MUST REMOVE THIS !!!!!! REMOVE ME !!!! REMOVE ME!!!!
-    void printAll();
-    
 private:
     // Your private member declarations will go here
     

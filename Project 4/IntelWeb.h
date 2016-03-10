@@ -34,7 +34,6 @@ private:
     // Your private member declarations will go here
     DiskMultiMap m_forwardMap;
     DiskMultiMap m_reverseMap;
-    // am i allowed to have this????
     std::string m_filePrefix;
 };
 

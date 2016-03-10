@@ -18,9 +18,7 @@
 #include <queue>
 
 IntelWeb::IntelWeb()
-{
-    
-}
+{ }
 
 IntelWeb::~IntelWeb()
 {
@@ -76,8 +74,7 @@ bool IntelWeb::ingest(const std::string& telemetryFile)
     // Test for failure to open
     if ( ! inf)
     {
-        cout << "Cannot open telemetry file!" << endl;
-        return 1;
+        return false;
     }
     string key;
     string value;
@@ -112,7 +109,6 @@ bool IntelWeb::ingest(const std::string& telemetryFile)
         m_reverseMap.insert(value, key, context);
     }
     
-    // WHAT IS INGEST SUPPOSED TO RETURN????
     return true;
 }
 
@@ -233,11 +229,11 @@ bool IntelWeb::purge(const std::string& entity)
     while (forwardSearcher.isValid())
     {
         currentTuple = *forwardSearcher;
+        ++forwardSearcher;  // move the iterator over before deleting the current object so it is still valid
         if (m_forwardMap.erase(currentTuple.key, currentTuple.value, currentTuple.context))
             erasedSomething = true;
         if (m_reverseMap.erase(currentTuple.value, currentTuple.key, currentTuple.context))
             erasedSomething = true;
-        ++forwardSearcher;
     }
 
     // search for entity as the key inside m_reverseMap
@@ -246,11 +242,11 @@ bool IntelWeb::purge(const std::string& entity)
     while (reverseSearcher.isValid())
     {
         currentTuple = *reverseSearcher;
+        ++reverseSearcher;  // move iterator over while it is still valid
         if (m_reverseMap.erase(currentTuple.key, currentTuple.value, currentTuple.context))
             erasedSomething = true;
         if (m_forwardMap.erase(currentTuple.value, currentTuple.key, currentTuple.context))
             erasedSomething = true;
-        ++reverseSearcher;
     }
     
     return erasedSomething;
