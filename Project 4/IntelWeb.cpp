@@ -118,49 +118,106 @@ bool IntelWeb::ingest(const std::string& telemetryFile)
 
 unsigned int IntelWeb::crawl(const std::vector<std::string>& indicators, unsigned int minPrevalenceToBeGood, std::vector<std::string>& badEntitiesFound, std::vector<InteractionTuple>& interactions)
 {
-    unsigned int numBadEntities = 0;
-    
     // make sure that the badEntitiesFound vector and the interactions vector starts off empty
     badEntitiesFound.clear();
     interactions.clear();
     
-    map<std::string, unsigned int> BadThings;
-    set<std::string> possibleBadThings;
-    set<InteractionTuple> setOfPossibleBadInteractions;
-    
-    // make a queue to hold indicators
-    queue<std::string> queueOfPossibleBadThings;
-    
-    for (int i = 0; i < indicators.size(); i++)        // do i need this????
-        queueOfPossibleBadThings.push(indicators[i]);
-    
-    // first find all of the badThings and map each string to the number of times it occurs
-    // check the number of times to see if it is legit or not
+    set<std::string> possibleBadThings;             // use this to store the bad entities
+    set<InteractionTuple> setOfBadInteractions;    // use this to store the bad interactions
     
     DiskMultiMap::Iterator forwardSearcher, reverseSearcher;
+    MultiMapTuple currentTuple;
     
     for (int i = 0; i < indicators.size(); i++)
     {
         string currentBadThing = indicators[i];
         forwardSearcher = m_forwardMap.search(currentBadThing);
         reverseSearcher = m_reverseMap.search(currentBadThing);
-        if (forwardSearcher.isValid())
+        while (forwardSearcher.isValid())
         {
-            
+            currentTuple = *forwardSearcher;
+            possibleBadThings.insert(currentTuple.key);    // insert the key since it was actually found in the telemetry
+            possibleBadThings.insert(currentTuple.value);   // insert the thing associated with the bad thing
+            ++forwardSearcher;
+        }
+        while (reverseSearcher.isValid())
+        {
+            currentTuple = *reverseSearcher;
+            possibleBadThings.insert(currentTuple.key);
+            possibleBadThings.insert(currentTuple.value);
+            ++reverseSearcher;
         }
     }
     
+    // our set now contains all possible bad things (things that were in interactions wtih the known bad things)
+    // check to see if the items are legit (less # than min prevalence) and if they are, add them to the vector
+    set<std::string>::iterator curr = possibleBadThings.begin();
+    int count = 0;   // counts how many times an item appears in the telemetry logs
+    while (curr != possibleBadThings.end())
+    {
+        forwardSearcher = m_forwardMap.search(*curr);
+        reverseSearcher = m_reverseMap.search(*curr);
+        while ((forwardSearcher.isValid() || reverseSearcher.isValid()) && count < minPrevalenceToBeGood)
+        {
+            if (forwardSearcher.isValid())  // item is found in the forward map
+            {
+                count++;
+                ++forwardSearcher;
+            }
+            if (reverseSearcher.isValid())  // item is found in the reverse map
+            {
+                count++;
+                ++reverseSearcher;
+            }
+        }
+        if (count >= minPrevalenceToBeGood)
+        {
+            curr = possibleBadThings.erase(curr);  // item is good, so delete it from the set of bad things
+            count = 0;  // reinitialize the count for the next element in the possible bads set
+        }
+        else   // item is bad so add it to the bad interactions vector
+        {
+            forwardSearcher = m_forwardMap.search(*curr);
+            reverseSearcher = m_reverseMap.search(*curr);
+            while (forwardSearcher.isValid())
+            {
+                currentTuple = *forwardSearcher;
+                InteractionTuple currInteraction(currentTuple.key, currentTuple.value, currentTuple.context);
+                setOfBadInteractions.insert(currInteraction);
+                ++forwardSearcher;
+            }
+            while (reverseSearcher.isValid())
+            {
+                currentTuple = *reverseSearcher;
+                InteractionTuple currInteraction(currentTuple.value, currentTuple.key, currentTuple.context);
+                setOfBadInteractions.insert(currInteraction);
+                ++reverseSearcher;
+            }
+            curr++;  // increment the iterator to point to the next bad item to check inside the telemetry
+            count = 0;  // reinitialize the count for the next element in the possible bads set
+        }
+    }
     
-    // then using the badThings you find, insert all of the bad interactions into a set
-    // making sure to check for the badThings in both m_forwardMap and m_reverseMap
+    // now set only contains confirmed bad things and the interaction only contains confirmed bad interactions
 
+    // define operator less than
+    // stick the things from the set into the vector
     
-    // my notes:
-    // searh for the keys inside the multimap
-    // if the value 
+    curr = possibleBadThings.begin();  // start at the beginning of the set
+    for (int i = 0; i < possibleBadThings.size(); i++)
+    {
+        badEntitiesFound.push_back(*curr);  // insert all of the bad strings
+        curr++;
+    }
+
+    set<InteractionTuple>::iterator currTupleIt = setOfBadInteractions.begin();
+    for (int i = 0; i < setOfBadInteractions.size(); i++)
+    {
+        interactions.push_back(*currTupleIt);
+        currTupleIt++;
+    }
     
-    
-    return numBadEntities;
+    return badEntitiesFound.size();   // returns the number of bad entities found in the telemetry logs
 }
 
 bool IntelWeb::purge(const std::string& entity)
@@ -191,10 +248,28 @@ bool IntelWeb::purge(const std::string& entity)
         currentTuple = *reverseSearcher;
         if (m_reverseMap.erase(currentTuple.key, currentTuple.value, currentTuple.context))
             erasedSomething = true;
-        if (m_reverseMap.erase(currentTuple.value, currentTuple.key, currentTuple.context))
+        if (m_forwardMap.erase(currentTuple.value, currentTuple.key, currentTuple.context))
             erasedSomething = true;
         ++reverseSearcher;
     }
     
     return erasedSomething;
+}
+
+// OPERATOR LESS THAN FOR INTERACTION TUPLES
+bool operator<(const InteractionTuple& a, const InteractionTuple& b)
+{
+    if (a.context < b.context)
+        return true;
+    if (a.context > b.context)
+        return false;
+    if (a.from < b.from)
+        return true;
+    if (a.from > b.from)
+        return false;
+    if (a.to < b.to)
+        return true;
+    if (a.to > b.to)
+        return false;
+    return false;       // since everything is equal, then just return false
 }
