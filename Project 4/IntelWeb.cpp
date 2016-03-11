@@ -118,61 +118,83 @@ unsigned int IntelWeb::crawl(const std::vector<std::string>& indicators, unsigne
     badEntitiesFound.clear();
     interactions.clear();
     
-    set<std::string> possibleBadThings;             // use this to store the bad entities
+    set<std::string> possibleBadThings;            // use this to store the bad entities
     set<InteractionTuple> setOfBadInteractions;    // use this to store the bad interactions
     
     DiskMultiMap::Iterator forwardSearcher, reverseSearcher;
     MultiMapTuple currentTuple;
+ 
+    vector<std::string> checkerVector;  // contains all the possible bad things that you need to check
     
     for (int i = 0; i < indicators.size(); i++)
     {
-        string currentBadThing = indicators[i];
+        checkerVector.push_back(indicators[i]);  // push all of the indicators into the checkerVector
+    }
+    
+    int counter = 0;  // count the number of times the item appears within the logs
+    
+    while(!checkerVector.empty())
+    {
+        string currentBadThing = checkerVector.back();  // get the last item from the vector
+        checkerVector.pop_back();  // remove the last item since we are currently checking it
         forwardSearcher = m_forwardMap.search(currentBadThing);
         reverseSearcher = m_reverseMap.search(currentBadThing);
         while (forwardSearcher.isValid())
         {
             currentTuple = *forwardSearcher;
-            possibleBadThings.insert(currentTuple.key);    // insert the key since it was actually found in the telemetry
-            possibleBadThings.insert(currentTuple.value);   // insert the thing associated with the bad thing
+            // count the number of times the possible bad thing occurs in both the forward and reverse map
+            DiskMultiMap::Iterator iterForward = m_forwardMap.search(currentTuple.value);
+            while (iterForward.isValid())
+            {
+                counter++;
+                ++iterForward;
+            }
+            DiskMultiMap::Iterator iterReverse = m_reverseMap.search(currentTuple.value);
+            while (iterReverse.isValid())
+            {
+                counter++;
+                ++iterReverse;
+            }
+            
+            if (counter < minPrevalenceToBeGood)  // bad thing
+            {
+                pair<set<std::string>::iterator, bool> p = possibleBadThings.insert(currentTuple.value);
+                if (p.second == true)  // could insert the value so it's new and add it to the vector
+                    checkerVector.push_back(currentTuple.value);  // insert the thing associated with the bad thing
+            }
+            counter = 0;
+            possibleBadThings.insert(currentTuple.key);  // need to insert key as well
             ++forwardSearcher;
         }
         while (reverseSearcher.isValid())
         {
             currentTuple = *reverseSearcher;
+            DiskMultiMap::Iterator iterForward = m_forwardMap.search(currentTuple.value);
+            while (iterForward.isValid())
+            {
+                counter++;
+                ++iterForward;
+            }
+            DiskMultiMap::Iterator iterReverse = m_reverseMap.search(currentTuple.value);
+            while (iterReverse.isValid())
+            {
+                counter++;
+                ++iterReverse;
+            }
+            if (counter < minPrevalenceToBeGood)
+            {
+                pair<set<std::string>::iterator, bool> p = possibleBadThings.insert(currentTuple.value);
+                if (p.second == true)
+                    checkerVector.push_back(currentTuple.value);
+            }
+            counter = 0;
             possibleBadThings.insert(currentTuple.key);
-            possibleBadThings.insert(currentTuple.value);
             ++reverseSearcher;
         }
     }
-    
-    // our set now contains all possible bad things (things that were in interactions wtih the known bad things)
-    // check to see if the items are legit (less # than min prevalence) and if they are, add them to the vector
     set<std::string>::iterator curr = possibleBadThings.begin();
-    int count = 0;   // counts how many times an item appears in the telemetry logs
     while (curr != possibleBadThings.end())
     {
-        forwardSearcher = m_forwardMap.search(*curr);
-        reverseSearcher = m_reverseMap.search(*curr);
-        while ((forwardSearcher.isValid() || reverseSearcher.isValid()) && count < minPrevalenceToBeGood)
-        {
-            if (forwardSearcher.isValid())  // item is found in the forward map
-            {
-                count++;
-                ++forwardSearcher;
-            }
-            if (reverseSearcher.isValid())  // item is found in the reverse map
-            {
-                count++;
-                ++reverseSearcher;
-            }
-        }
-        if (count >= minPrevalenceToBeGood)
-        {
-            curr = possibleBadThings.erase(curr);  // item is good, so delete it from the set of bad things
-            count = 0;  // reinitialize the count for the next element in the possible bads set
-        }
-        else   // item is bad so add it to the bad interactions vector
-        {
             forwardSearcher = m_forwardMap.search(*curr);
             reverseSearcher = m_reverseMap.search(*curr);
             while (forwardSearcher.isValid())
@@ -190,14 +212,9 @@ unsigned int IntelWeb::crawl(const std::vector<std::string>& indicators, unsigne
                 ++reverseSearcher;
             }
             curr++;  // increment the iterator to point to the next bad item to check inside the telemetry
-            count = 0;  // reinitialize the count for the next element in the possible bads set
-        }
     }
     
     // now set only contains confirmed bad things and the interaction only contains confirmed bad interactions
-
-    // define operator less than
-    // stick the things from the set into the vector
     
     curr = possibleBadThings.begin();  // start at the beginning of the set
     for (int i = 0; i < possibleBadThings.size(); i++)

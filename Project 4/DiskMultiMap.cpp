@@ -245,7 +245,7 @@ DiskMultiMap::Iterator DiskMultiMap::search(const std::string& key)
                 currentNode = tempNode.m_next;
             }
         }
-        Iterator it;   // couldn't find the ndoe, so just return an invalid node
+        Iterator it;   // couldn't find the node, so just return an invalid iterator
         return it;
     }
 }
