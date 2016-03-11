@@ -9,7 +9,8 @@
 #include "DiskMultiMap.h"
 #include "MultiMapTuple.h"
 #include <functional>         // include this for the hash function
-#include <string>             // include this for strcpy()
+#include <cstring>             // include this for strcpy()
+#include <string>
 
 // ITERATOR IMPLEMENTATION =========================================================================================
 

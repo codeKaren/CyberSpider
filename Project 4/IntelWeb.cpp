@@ -16,6 +16,7 @@
 #include <map>
 #include <set>
 #include <queue>
+#include <cstring>
 
 IntelWeb::IntelWeb()
 { }
